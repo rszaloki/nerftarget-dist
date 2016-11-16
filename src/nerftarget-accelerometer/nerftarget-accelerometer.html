@@ -1,0 +1,64 @@
+<html><head><link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/platinum-bluetooth/platinum-bluetooth-elements.html">
+
+</head><body><dom-module id="nerftarget-accelerometer">
+    <template>
+        <style>
+            :host {
+                display: none;
+            }
+        </style>
+        <platinum-bluetooth-device name-prefix-filter="BBC" services-filter="[&quot;e95d0753-251d-470a-a062-fa1922dfa9a8&quot;]">
+            <platinum-bluetooth-service service="e95d0753-251d-470a-a062-fa1922dfa9a8">
+                <platinum-bluetooth-characteristic characteristic="e95dca4b-251d-470a-a062-fa1922dfa9a8" on-value-changed="acceleroMeter"></platinum-bluetooth-characteristic>
+            </platinum-bluetooth-service>
+        </platinum-bluetooth-device>
+    </template>
+    <script>
+        Polymer({
+            is:'nerftarget-accelerometer',
+            properties:{
+                x: {
+                    type: Number,
+                    notify: true
+                },
+                y: {
+                    type: Number,
+                    notify: true                    
+                },
+                z: {
+                    type: Number,
+                    notify: true                    
+                },
+                d: {
+                    type: Number,
+                    notify: true
+                },
+                device: {
+                    value:null,
+                    notify: true
+                }
+            },
+            acceleroMeter: function(event) {
+                let dv = event.target.value;
+                let x = dv.getInt16(0) / 500;
+                let y = dv.getInt16(2) / 500;
+                let z = dv.getInt16(4) / 500;
+                let d = x * x + y * y + z * z;
+                this.x = x;
+                this.y = y;
+                this.z = z;
+                this.d = Math.abs(Math.sqrt(d));
+             },
+            connect: function() {
+                let bd = this.$$('platinum-bluetooth-device');
+                let characteristic = this.$$('platinum-bluetooth-characteristic');
+                bd.request().then( (device) => this.device = device ).then( (device) => characteristic.startNotifications() ).catch(error => console.log(error));
+            },
+            disconnect: function() {
+                let bd = this.$$('platinum-bluetooth-device').disconnect();
+                this.device = null;
+            }
+        })
+    </script>
+</dom-module></body></html>

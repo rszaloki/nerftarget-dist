@@ -1,0 +1,147 @@
+<html><head><link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/app-layout/app-layout.html">
+<link rel="import" href="../../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../nerftarget-accelerometer/nerftarget-accelerometer.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../nerftarget-graph/nerftarget-graph.html">
+<link rel="import" href="../nerftarget-hit/nerftarget-hit.html">
+
+
+
+
+</head><body><dom-module id="nerftarget-app">
+  <template>
+    <style>
+      :host {
+        position: fixed;
+        top:0;
+        bottom:0;
+        left:0;
+        right:0;
+        display: block;
+        font-family: sans-serif;
+        background-color: var(--paper-grey-50);
+        text-align:center;        
+      }
+
+      app-header {
+        background-color: var(--paper-blue-500);
+        color: white;
+      }
+
+      paper-button {
+        background-color: var(--paper-blue-500);
+        color:white;
+      }
+
+      #content {
+        color: var(--paper-grey-800);
+      }
+
+      .hitcounter {
+        font-size: 120px;
+        line-height:2em;
+        font-family: monospace;
+      }
+    </style>
+    <app-header-layout>
+      <app-header fixed="" condenses="" effects="waterfall">
+        <app-toolbar>
+          <template is="dom-if" if="{{!device}}">
+            <paper-button id="connect" raised="" on-tap="connect">Connect</paper-button>
+          </template>
+          <template is="dom-if" if="{{device}}">
+            <paper-button id="disconnect" raised="" on-tap="disconnect">Disconnect</paper-button>
+          </template>
+        </app-toolbar>
+      </app-header>
+      <div id="content">
+        <div class="hitcounter">{{hitCount}}</div>
+        <nerftarget-graph series="{{series}}"></nerftarget-graph>
+      </div>
+      <nerftarget-accelerometer d="{{vec}}" device="{{device}}"></nerftarget-accelerometer>
+      <nerftarget-hit current-vector="{{vec}}" hit="{{currentHit}}" hit-level="{{hitLevel}}" hit-object="{{currentData}}"></nerftarget-hit>
+    </app-header-layout>
+  </template>
+
+  <script>
+    Polymer({
+      properties: {
+        device: {
+          type: Object
+        },
+        currentData: {
+          type: Object,
+          observer: 'dataChangeHandler'
+        },
+        series: {
+          type: Array,
+          value:[],
+          notify:true
+        },
+        hitLevel:{
+          type:Number,
+          value:0.4
+        },
+        hitCount: {
+          type: Number,
+          value: 0
+        },
+        currentHit: {
+          type: Boolean,
+          value: false,
+          observer: 'hitChange'
+        }
+      },
+
+      is: 'nerftarget-app',
+      ready: function() {
+        var littleEndian = (function() {
+          var buffer = new ArrayBuffer(2);
+          new DataView(buffer).setInt16(0, 256, true /* littleEndian */);
+          // Int16Array uses the platform's endianness.
+          return new Int16Array(buffer)[0] === 256;
+        })();
+        console.log('littleEndian: '+littleEndian); // true or false
+      },
+
+      connect: function(){
+        this.$$('nerftarget-accelerometer').connect();
+        this.hitCount = 0;
+      },
+
+      disconnect: function() {
+        this.$$('nerftarget-accelerometer').disconnect();
+      },
+
+      startHitMeasure: function(){
+        return new Promise(function(resolve, reject){
+          this.measuring = true;
+          setTimeout(()=>{
+            resolve(this.currentHit ? 0 : 1);
+          },500);
+        });
+
+      },
+
+      hitChange: function(newVal){
+        if(newVal && !this.measuring) {
+          this.startHitMeasure().then((countedHit) => {
+            this.hitCount+=countedHit;
+            this.measuring = false;
+          });
+        }
+      },
+
+      dataChangeHandler: function(newVal) {
+        this.push('series', newVal);
+        if(this.series.length > 320) {
+          this.shift('series');
+        }
+      }
+
+    });
+  </script>
+</dom-module>
+</body></html>

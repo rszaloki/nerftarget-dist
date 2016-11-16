@@ -1,0 +1,69 @@
+<html><head><link rel="import" href="../../bower_components/polymer/polymer.html">
+
+</head><body><dom-module id="nerftarget-hit">
+    <template>
+        <style>
+            :host {
+                display: none;
+            }
+        </style>
+    </template>
+    <script>
+        Polymer({
+            properties: {
+                hit: {
+                    value:false,
+                    notify: true
+                },
+                currentVector: {
+                    type:Number,
+                    value:0,
+                    observer: "currentVectorChanged"
+                },
+                lastItems: {
+                    type:Array,
+                    value: []
+                },
+                currentMedian: {
+                    type:Number,
+                    value:0,
+                    notify: true
+                },
+                hitLevel: {
+                    type: Number,
+                    value:0.2
+                },
+                hitObject: {
+                    type:Object,
+                    value:{},
+                    notify:true
+                }
+            },
+            calculateMedian: function(a) {
+                return a.reduce((current, prev) => prev + current,0) / a.length;
+            },
+            currentVectorChanged: function(newVal) {
+                let hitLow, hitHigh;
+
+                if(this.lastItems) {
+                    this.lastItems.push(newVal);
+                    if(this.lastItems.length > 30) {
+                        this.lastItems.shift();
+                    }
+                    this.currentMedian = this.calculateMedian(this.lastItems);
+                    hitLow = this.currentMedian - this.currentMedian * this.hitLevel;
+                    hitHigh = this.currentMedian + this.currentMedian * this.hitLevel;
+                    this.hit = newVal > hitHigh || newVal < hitLow;
+                    this.hitObject = {
+                        current: newVal,
+                        hitHigh: hitHigh,
+                        hitLow: hitLow,
+                        hit: this.hit
+                    };
+                }
+            },
+
+            is:'nerftarget-hit'
+        })
+    </script>
+</dom-module></body></html>

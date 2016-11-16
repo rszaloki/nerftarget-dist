@@ -1,0 +1,54 @@
+<html><head><link rel="import" href="../../bower_components/polymer/polymer.html">
+
+</head><body><dom-module id="nerftarget-graph">
+    <template>
+        <style>
+            :host {
+                 display:block;
+            }
+        </style>
+        <canvas width="320" height="200"></canvas>
+    </template>
+    <script>
+        Polymer({
+            is:'nerftarget-graph',
+            properties: {
+                series: {
+                    type:Array,
+                    value:[]
+                }
+            },
+            rafId: null,
+            observers: [
+                'repaint(series.splices)'
+            ],
+            ready: function(){
+                this.canvas = this.$$('canvas');
+            },
+            repaint: function() {
+                if(!this.rafId && this.canvas) {
+                    this.rafId = window.requestAnimationFrame(this.paint.bind(this));
+                }
+            },
+            paintSeries: function(series, style){
+                let ctx = this.canvas.getContext('2d');
+                let h = this.canvas.height;
+                ctx.beginPath();
+                ctx.strokeStyle = style;
+                ctx.moveTo(0, h - series[0]);
+                for(let i=1; i< series.length; i++) {
+                    ctx.lineTo(i,h-series[i]);
+                }
+                ctx.stroke();
+            },
+            paint: function() {
+                this.canvas.width = 320;
+                this.paintSeries(this.series.map(item => item.current), 'grey' );
+                this.paintSeries(this.series.map(item => item.hitHigh), 'red' );
+                this.paintSeries(this.series.map(item => item.hitLow), 'red' );
+                this.paintSeries(this.series.map(item => item.hit ? 190 : 100), 'green' );
+                this.rafId = null;
+            }
+        })
+    </script>
+</dom-module></body></html>
